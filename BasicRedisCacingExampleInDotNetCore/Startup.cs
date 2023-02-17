@@ -40,11 +40,11 @@ namespace BasicRedisCacingExampleInDotNetCore
             var redisPassword = Configuration["REDIS_PASSWORD"];
             if (redisPassword != null)
             {
-                redisConnectionUrl = $"{redisHost}:{redisPort},password={redisPassword}";
+                redisConnectionUrl = $"{redisHost}:{redisPort},password={redisPassword},ssl=True,abortConnect=False";
             }
             else
             {
-                redisConnectionUrl = $"{redisHost}:{redisPort}";
+                redisConnectionUrl = $"{redisHost}:{redisPort},ssl=True,abortConnect=False";
             }
             var client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.ParseAdd("dotnet");
