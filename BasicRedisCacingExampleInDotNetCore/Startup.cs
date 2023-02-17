@@ -31,12 +31,13 @@ namespace BasicRedisCacingExampleInDotNetCore
                 configuration.RootPath = "ClientApp/dist";
             });
 
-            var redisEndpointUrl = (Environment.GetEnvironmentVariable("REDIS_ENDPOINT_URL") ?? "127.0.0.1:6379").Split(':');
+            var redisEndpointUrl = (Configuration["REDIS_ENDPOINT_URL"]).Split(':');
             var redisHost = redisEndpointUrl[0];
             var redisPort = redisEndpointUrl[1];
 
             string redisConnectionUrl = string.Empty;
-            var redisPassword = Environment.GetEnvironmentVariable("REDIS_PASSWORD");
+            
+            var redisPassword = Configuration["REDIS_PASSWORD"];
             if (redisPassword != null)
             {
                 redisConnectionUrl = $"{redisHost}:{redisPort},password={redisPassword}";
