@@ -73,7 +73,7 @@ namespace BasicRedisCacingExampleInDotNetCore.Controllers
 
             funcTimer.Stop();
             TimeSpan timeTaken = funcTimer.Elapsed;
-            Response.Headers.Add("x-response-time", $"{timeTaken.Seconds}.{timeTaken.Milliseconds}ms");
+            Response.Headers.Add("x-response-time", $"{timeTaken.Seconds}s {timeTaken.Milliseconds}ms");
             return Content(cache, "application/json");
         }
     }
