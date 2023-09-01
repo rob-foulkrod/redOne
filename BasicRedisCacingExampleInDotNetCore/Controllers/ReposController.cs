@@ -39,7 +39,7 @@ namespace BasicRedisCacingExampleInDotNetCore.Controllers
 
             //check if we've already seen that username recently
 
-            RedisValue cache = null;
+            RedisValue cache;
 
 
             // var success = false;
