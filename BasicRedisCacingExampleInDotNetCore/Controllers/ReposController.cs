@@ -39,27 +39,27 @@ namespace BasicRedisCacingExampleInDotNetCore.Controllers
 
             //check if we've already seen that username recently
 
-            RedisValue cache;
+            RedisValue cache = null;
 
 
-            var success = false;
-            var startTime = DateTime.UtcNow;
-            var timer = System.Diagnostics.Stopwatch.StartNew();
-            try
-            {
-                cache = await db.StringGetAsync($"repos:{username}");
-                success = true;
-            }
-            catch (Exception ex)
-            {
-                _telemetry.TrackException(ex);
-                throw new Exception("Redis Exception", ex);
-            }
-            finally
-            {
-                timer.Stop();
-                _telemetry.TrackDependency("RedisCache", "Example Redis Cache", "CacheLookup", startTime, timer.Elapsed, success);
-            }
+            // var success = false;
+            // var startTime = DateTime.UtcNow;
+            // var timer = System.Diagnostics.Stopwatch.StartNew();
+            // try
+            // {
+            //     cache = await db.StringGetAsync($"repos:{username}");
+            //     success = true;
+            // }
+            // catch (Exception ex)
+            // {
+            //     _telemetry.TrackException(ex);
+            //     throw new Exception("Redis Exception", ex);
+            // }
+            // finally
+            // {
+            //     timer.Stop();
+            //     _telemetry.TrackDependency("RedisCache", "Example Redis Cache", "CacheLookup", startTime, timer.Elapsed, success);
+            // }
 
             if (string.IsNullOrEmpty(cache))
             {
