@@ -87,6 +87,13 @@ namespace BasicRedisCacingExampleInDotNetCore.Controllers
                     data.Cached = false;
                     returnJson = JsonSerializer.Serialize(data);
                 }
+                else
+                {
+                    //We've seen this username recently, so let's return the cached value
+                    var data = JsonSerializer.Deserialize<ResponseModel>(cache);
+                    data.Cached = true;
+                    returnJson = JsonSerializer.Serialize(data);
+                }
             }
 
             funcTimer.Stop();
