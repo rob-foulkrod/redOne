@@ -1,6 +1,7 @@
 ﻿using BasicRedisCacingExampleInDotNetCore.Models;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using StackExchange.Redis;
 using System;
 using System.Diagnostics;
@@ -18,12 +19,14 @@ namespace BasicRedisCacingExampleInDotNetCore.Controllers
         private readonly IConnectionMultiplexer _redis;
         private readonly HttpClient _client;
         private readonly TelemetryClient _telemetry;
+        private readonly IConfiguration _config;
 
-        public ReposController(IConnectionMultiplexer redis, HttpClient client, TelemetryClient telemetry)
+        public ReposController(IConnectionMultiplexer redis, HttpClient client, TelemetryClient telemetry, IConfiguration configuration)
         {
             _redis = redis;
             _client = client;
-            _telemetry=telemetry;
+            _telemetry = telemetry;
+            _config = configuration;
         }
 
         /// <summary>
@@ -34,47 +37,62 @@ namespace BasicRedisCacingExampleInDotNetCore.Controllers
         [HttpGet("{username}")]
         public async Task<IActionResult> GetRepoCount(string username)
         {
+
+            bool cacheDisabled = _config.GetValue<bool>("DISABLE_CACHE");
+            string returnJson = string.Empty;
+
+
             var funcTimer = Stopwatch.StartNew();
-            var db = _redis.GetDatabase();
-
-            //check if we've already seen that username recently
-
-            RedisValue cache;
-
-
-            var success = false;
-            var startTime = DateTime.UtcNow;
-            var timer = System.Diagnostics.Stopwatch.StartNew();
-            try
-            {
-                cache = await db.StringGetAsync($"repos:{username}");
-                success = true;
+            GitResponseModel dataFromServiceCall = null;
+            
+            if(cacheDisabled){
+                dataFromServiceCall = await _client.GetFromJsonAsync<GitResponseModel>($"users/{username}");
+                var data = new ResponseModel { Repos = dataFromServiceCall.PublicRepos.ToString(), Username = username, Cached = false };
+                returnJson = JsonSerializer.Serialize(data);
             }
-            catch (Exception ex)
+            else
             {
-                _telemetry.TrackException(ex);
-                throw new Exception("Redis Exception", ex);
-            }
-            finally
-            {
-                timer.Stop();
-                _telemetry.TrackDependency("RedisCache", "Example Redis Cache", "CacheLookup", startTime, timer.Elapsed, success);
-            }
 
-            if (string.IsNullOrEmpty(cache))
-            {
-                //Since we haven't seen this username recently, let's grab it from the github API
-                var gitData = await _client.GetFromJsonAsync<GitResponseModel>($"users/{username}");
-                var data = new ResponseModel { Repos = gitData.PublicRepos.ToString(), Username = username, Cached = true };
-                await db.StringSetAsync($"repos:{username}", JsonSerializer.Serialize(data), expiry: TimeSpan.FromMinutes(5));
-                data.Cached = false;
-                cache = JsonSerializer.Serialize(data);
+                var db = _redis.GetDatabase();
+
+                //check if we've already seen that username recently
+
+                RedisValue cache;
+
+                var success = false;
+                var startTime = DateTime.UtcNow;
+                var dependencyTimer = Stopwatch.StartNew();
+                try
+                {
+                    cache = await db.StringGetAsync($"repos:{username}");
+                    success = true;
+                }
+                catch (Exception ex)
+                {
+                    _telemetry.TrackException(ex);
+                    throw new Exception("Redis Exception", ex);
+                }
+                finally
+                {
+                    dependencyTimer.Stop();
+                    _telemetry.TrackDependency("RedisCache", "Example Redis Cache", "CacheLookup", startTime, dependencyTimer.Elapsed, success);
+                }
+
+                if (string.IsNullOrEmpty(cache))
+                {
+                    //Since we haven't seen this username recently, let's grab it from the github API
+                    dataFromServiceCall = await _client.GetFromJsonAsync<GitResponseModel>($"users/{username}");
+                    var data = new ResponseModel { Repos = dataFromServiceCall.PublicRepos.ToString(), Username = username, Cached = true };
+                    await db.StringSetAsync($"repos:{username}", JsonSerializer.Serialize(data), expiry: TimeSpan.FromMinutes(5));
+                    data.Cached = false;
+                    returnJson = JsonSerializer.Serialize(data);
+                }
             }
 
             funcTimer.Stop();
             TimeSpan timeTaken = funcTimer.Elapsed;
             Response.Headers.Add("x-response-time", $"{timeTaken.Seconds}s {timeTaken.Milliseconds}ms");
-            return Content(cache, "application/json");
+            return Content(returnJson, "application/json");
         }
     }
 }

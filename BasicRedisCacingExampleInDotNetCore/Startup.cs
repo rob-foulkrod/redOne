@@ -50,6 +50,7 @@ namespace BasicRedisCacingExampleInDotNetCore
             client.DefaultRequestHeaders.UserAgent.ParseAdd("dotnet");
             client.BaseAddress = new Uri("https://api.github.com");
             services.AddSingleton(client);
+            services.AddSingleton(Configuration);
             services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionUrl));
             services.AddApplicationInsightsTelemetry(Configuration["APPINSIGHTS_CONNECTIONSTRING"]);
         }

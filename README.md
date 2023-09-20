@@ -49,6 +49,7 @@ if (string.IsNullOrEmpty(cache))
 ```
    REDIS_ENDPOINT_URL = "Redis server URI:PORT_NUMBER"
    REDIS_PASSWORD = "Password to the server"
+   DISABLE_CACHE = false; # optionally to show without a cache
 ```
 
 #### Run backend
